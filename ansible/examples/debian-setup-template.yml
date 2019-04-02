@@ -1,0 +1,84 @@
+- hosts: all
+  become: yes
+  become_method: sudo
+  user: FIXME-SUDO-USER
+  vars:
+    COMMON_ROOT_PASSWORD: 'FIXME-ROOT_PW_HASH'
+    COMMON_DEPLOY_PASSWORD: 'FIXME-DEPLOY_USER_PW_HASH'
+    common_deploy_user_name: FIXME-DEPLOY_USER_NAME
+    common_deploy_public_keys:
+      - FIXME-LOCAL_SSH_PUBKEY
+
+    common_required_packages:
+      - ufw
+      - fail2ban
+      - vim
+      - sudo
+      - git 
+
+    common_ssh_port: 22
+
+  tasks:
+    - name: Update APT package cache
+      apt: update_cache=yes cache_valid_time=3600
+
+    - name: Upgrade APT to the latest packages
+      apt: upgrade=safe
+
+    - name: Install required packages
+      apt: 
+        pkg: '{{ common_required_packages }}'
+        state: present
+
+    - name: Change root password
+      user: name=root password="{{ COMMON_ROOT_PASSWORD }}"
+
+    - name: Add deploy user
+      user: name="{{ common_deploy_user_name }}" password="{{ COMMON_DEPLOY_PASSWORD }}" shell=/bin/bash
+
+    - name: Add deploy user to sudoers
+      lineinfile: "dest=/etc/sudoers
+                  regexp='{{ common_deploy_user_name }} ALL'
+                  line='{{ common_deploy_user_name }} ALL=NOPASSWD: ALL'
+                  state=present"
+
+    - name: Add authorized keys for deploy user
+      authorized_key: user={{ common_deploy_user_name }} key="{{ lookup('file', item) }}"
+      with_items: "{{ common_deploy_public_keys }}"
+
+    - name: Disallow ssh password authentication
+      lineinfile: dest=/etc/ssh/sshd_config
+                  regexp="^PasswordAuthentication"
+                  line="PasswordAuthentication no"
+                  state=present
+      notify: 
+        - restart ssh
+
+    - name: Disallow root SSH access
+      lineinfile: dest=/etc/ssh/sshd_config
+                  regexp="^PermitRootLogin"
+                  line="PermitRootLogin no"
+                  state=present
+      notify: restart ssh
+
+    - name: Sane vim settings in /etc/vim/vimrc.local
+      template: src=./files/vimrc.local dest=/etc/vim/vimrc.local
+
+    - name: Setup ufw
+      ufw: state=enabled direction=incoming policy=deny
+
+    - name: Allow ssh traffic
+      ufw: rule=allow port={{ common_ssh_port }} proto=tcp
+
+    - name: make shure ssh is restarted
+      service:
+        name: ssh 
+        state: restarted
+
+
+  handlers:
+    - name: restart ssh
+      service: 
+        name: ssh 
+        state: restarted
+

@@ -1,0 +1,9 @@
+[intranet]
+10.16.1.1
+docker.linuxmuster.lokal            ansible_ssh_user=dockeradmin
+backup.linuxkuster.lokal
+
+[webdienste]
+www.meine-schule.tld                ansible_ssh_user=serveradmin
+portfolio.meine-schule.tld          ansible_ssh_user=pfadmin
+

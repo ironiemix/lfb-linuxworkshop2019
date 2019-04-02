@@ -1,0 +1,34 @@
+- hosts: FIXME-HOSTS-WITH-PHP7-FROM-MISTER-SURY
+  become: yes
+  become_method: sudo
+  user: FIXME-SUDO-USER
+  tasks:
+    - apt_repository:
+        repo: deb https://packages.sury.org/php/ stretch main
+        state: present
+    - name: Get repository key for surys PHP repository
+      apt_key:
+        url: https://packages.sury.org/php/apt.gpg
+        state: present
+
+- hosts: all
+  become: yes
+  become_method: sudo
+  user: FIXME-SUDO-USER
+  tasks:
+    - name: update package list
+      apt: 
+       update_cache: yes
+       cache_valid_time: 3600
+
+    - name: upgrade the server
+      apt:
+        upgrade: dist
+
+    - name: Remove useless packages from the cache
+      apt:
+        autoclean: yes
+
+    - name: Remove dependencies that are no longer required
+      apt:
+        autoremove: yes
