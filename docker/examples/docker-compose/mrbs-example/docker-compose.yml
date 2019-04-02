@@ -1,0 +1,27 @@
+version: '2'
+services:
+  db:
+    container_name: mariadb
+    restart: always
+    image: mariadb:latest
+    environment:
+      MYSQL_ROOT_PASSWORD: hoonee0Uuch8bier9po2
+    volumes:
+      - ./mariadb-data:/var/lib/mysql
+  mrbs1:
+    depends_on:
+      - db
+    container_name: raumbuchung
+    restart: always
+    image: linuxmuster/mrbs:latest
+    environment:
+        MRBS_DB_HOST: db
+        MRBS_DB_PORT: 3306
+        MRBS_DB_USER: mrbsdbuser
+        MRBS_DB_PASSWORD: gequ8ao3geeNgeecoh4a
+        MRBS_DB_NAME: mrbs_raumbuchung
+        MYSQL_ROOT_PASSWORD: hoonee0Uuch8bier9po2
+    ports:
+      - "8080:80"
+    volumes:
+      - ./raumbuchung.inc.php:/var/www/html/config.inc.php
